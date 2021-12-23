@@ -31,7 +31,7 @@ Web service with JavaScript(React and Express Js) + MySQL
 
 `mysql -u [계정] -p [데이터베이스]`으로 원하는 db에 접속 가능하다.
 
-이후, npm에서 mysql 모듈을 설치하여 express 서버에서 sql문으로 데이터베이스에 접근할 수 있도록 해줘야 한다.
+이후, npm에서 `mysql2` 모듈을 설치하여 express 서버에서 sql문으로 데이터베이스에 접근할 수 있도록 해줘야 한다.
 
 # 두가지 방법이 있습니다.
 
@@ -96,19 +96,19 @@ react dev server는 3000번 포트에서 실행되고 있고, Express는 3001번
 ```json
 //in package.json
 {
-  ...
+  ,,,
 "proxy": "http://localhost:3001",
-  ...
+  ,,,
 }
 ```
 
-https://ljh86029926.gitbook.io/coding-apple-react/undefined-1/cra
+참고 링크: [상황에 따라 여러 서버를 이용해야 한다면?](https://ljh86029926.gitbook.io/coding-apple-react/undefined-1/cra)
 
 ## Express와 CRA를 연동 (2) coding & test
 
 AJAX 통신 예제를 통하여 실제 데이터를 주고받아보자. App.js에 다음과 같이 작성해주었다. 버튼을 누르면 서버에 저장된 count 변수를 1씩 plus해주도록 하기 위해 다음과 같이 작성하였다.
 
-```react
+```js
 //App.js
 function App() {
   return (
@@ -129,7 +129,7 @@ export default App;
 
 ```
 
-`/api/plus` 요청은 react 개발서버에서 처리할 수 없으므로 package.json에 저장된 프록시 주소로 요청이 넘어갈 것이다. 따라서 express 서버에서는 이를 처리해주면 된다. 다음 코드를 추가해주었다.
+`/api/plus` 요청은 react 개발서버에서 처리할 수 없으므로 package.json에 저장된 프록시 주소로 요청이 넘어갈 것이다. 따라서 express 서버에서는 이를 처리해주면 된다. 다음 코드를 추가해주었다. 
 
 ```js
 let count = 0;
@@ -141,13 +141,50 @@ app.get('/api/plus', (req, res) => {
 
 ```
 
-이제 `localhost:3000`에서 브라우저 콘솔창을 열어 작동하는지 확인해보자!
+이제 react와 express 서버 모두 실행시킨 상태에서 `localhost:3000`로 브라우저 콘솔창을 열어 작동하는지 확인해보자!
 
 ![react-express](react-express.png)
 
 잘 작동한다~! 이제 웹서버와 리액트를 연동시킨 것을 확인하였으니 MySQL을 서버에 연결시켜보자.
 
 ## DB 연동
+
+우선, mysql 서버가 실행되고 있어야한다. `mysql.server start`로 실행한 후 새로운 테이블을 만들어주었다. 나는 아직 SQL이 익숙하지 않아 GUI 기반의 `Sequel Pro` 프로그램을 이용하여 테이블을 만들어주었다. (이 과정에서 접속 오류가 있었는데 [이 글을 보고](https://velog.io/@deannn/macOS-Sequel-Pro-%EC%84%A4%EC%B9%98-%EB%B0%8F-%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95) 해결하였다)
+
+MySQL이 로컬 컴퓨터에 설치 및 실행된 상태에서, npm을 통해 mysql 드라이버를 설치하여 DB와 js파일을 연동시켜주도록 하자. `mysql2`패키지는 데이터베이스와 자바스크립트가 연결되도록 api를 제공해준다. 비슷한 `mysql`패키지도 있지만, 이는 비동기적으로만 실행되므로 헷갈리므로 동기적 실행을 가능하게 하는 mysql2를 사용하였다. `npm install mysql2 --save`를 통해 설치하였다. 
+
+위의 예시에서는 서버 파일이 실행될때 count가 0으로 초기화되었지만, count값을 db에서 가져오는 것으로 확장해보려고 한다.
+
+### DB 연결
+
+table명은 express이며, 정수형 field인 count를 0으로 초기화한 상태이다.
+
+![image-20211215011607452](/Users/choieastsea/Desktop/choieastsea/vscode/GitHub/full-stack-in-js/db.png)`server.js`에 다음을 추가해주었다. 우선 같은 파일 디렉토리에 비밀번호를 포함한 기본 정보를 담은 json파일을 분리해주었고(`.gitignore`에도 추가하여 비밀번호 깃허브 공유를 방지) `connect()`로 연결해주었다. 
+
+```javascript
+const mysql = require('mysql');
+const db_config = require('./db-config.json');
+const connection = mysql.createConnection({
+    host: db_config.host,
+    user: db_config.user,
+    password: db_config.password,
+    database: db_config.database
+});
+
+connection.connect();
+
+connection.query('SELECT count from express', (error, rows) => {
+    if (error) throw error;
+    console.log(rows);	//[ RowDataPacket { count: 0 } ]
+    console.log(rows[0].count);	//0
+});
+```
+
+성공적으로 연결되었다면 콘솔에 주석과 같이 찍히게 된다.
+
+### plus API 수정
+
+위에서 버튼을 누르면 서버에 저장된 count 변수를 +1해주는 api를 작성했었다. 이를 DB의 count를 가져와 더해주는 것으로 수정해보자.
 
 
 
