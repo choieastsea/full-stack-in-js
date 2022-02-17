@@ -29,9 +29,9 @@ Web service with JavaScript(React and Express Js) + MySQL
 
 설치되었다면 `mysql.server start`로 MySQL server 실행 가능, `mysql.server stop`으로 중단 가능하다.
 
-`mysql -u [계정] -p [데이터베이스]`으로 원하는 db에 접속 가능하다.
+`mysql -u [계정] -p [데이터베이스]`으로 원하는 db에 접속 가능하다.(이후 password 입력)
 
-이후, npm에서 `mysql2` 모듈을 설치하여 express 서버에서 sql문으로 데이터베이스에 접근할 수 있도록 해줘야 한다.
+이후, npm에서 `mysql2` 모듈을 설치하여 express 서버에서 sql문으로 데이터베이스에 접근할 수 있도록 해줘야 한다. 
 
 # 두가지 방법이 있습니다.
 
@@ -73,11 +73,11 @@ app.listen(PORT, () => {
 });
 ```
 
-해당 파일이 있는 디렉토리에서 `npx nodemon server.js`와 같이 실행시켜주면 `localhost:3001`에 서버가 정상적으로 실행되는 것을 확인할 수 있다. 
+해당 파일이 있는 디렉토리에서 `npx nodemon server.js`와 같이 실행시켜주면 `localhost:3001`에 서버가 정상적으로 실행되는 것을 확인할 수 있다. (Example app listening at http://localhost:3001 라고 터미널 콘솔에 나오는 것이 확인되야 함)
 
 ## Express와 CRA를 연동 (1) proxy setting
 
-react dev server는 3000번 포트에서 실행되고 있고, Express는 3001번 포트에서 실행되고 있다. 여기서 express 서버와 react 개발 서버와 통신하기 위해 index.js를 다음과 같이 바꿔보자. 버튼을 만들어서 3001번 포트에 get방식으로 request를 보내는 것이다. 이러면  `CORS` 에러(한 서버프로그램에서 다른 서버 프로그램으로 데이터가 전송되지 않도록 브라우저 단에서 막는 정책)가 발생하게 된다.
+react dev server는 3000번 포트에서 실행되고 있고, Express는 3001번 포트에서 실행되고 있다. 여기서 express 서버와 react 개발 서버와 통신하기 위해 index.js를 다음과 같이 바꿔보자. 버튼을 만들어서 3001번 포트(express 서버)에 get방식으로 request를 보내는 것이다. 이러면 `CORS` 에러(한 서버프로그램에서 다른 서버 프로그램으로 데이터가 전송되지 않도록 브라우저 단에서 막는 정책)가 발생하게 된다.
 
 우리가 여기서 해줄 수 있는 방법은 두가지이다.
 
@@ -91,7 +91,7 @@ react dev server는 3000번 포트에서 실행되고 있고, Express는 3001번
 
 2번 방식이 더 효율적인데, 이유는 express 서버의 포트가 바뀌는 것에 대하여 URI를 신경쓰지 않아도 되며 이후 쿠키(Cookie)등의 사용에서 권한 처리를 해주지 않아도 된다. 이는 생활코딩님의 [강의](https://www.youtube.com/watch?v=VaAWIAxvj0A)를 참고하였다.
 
-우리는 단지 package.json에 다음을 추가하면 된다.
+우리는 **단지 package.json에 다음을 추가하면 된다.**
 
 ```json
 //in package.json
@@ -155,11 +155,23 @@ MySQL이 로컬 컴퓨터에 설치 및 실행된 상태에서, npm을 통해 my
 
 위의 예시에서는 서버 파일이 실행될때 count가 0으로 초기화되었지만, count값을 db에서 가져오는 것으로 확장해보려고 한다.
 
-### DB 연결
+### DB 연결 확인
 
-table명은 express이며, 정수형 field인 count를 0으로 초기화한 상태이다.
+table명은 express이며, 정수형 field인 count를 만들어주고, 한 row만 만들어 해당 줄의 count를 0으로 초기화한 상태이다.
 
-![image-20211215011607452](/Users/choieastsea/Desktop/choieastsea/vscode/GitHub/full-stack-in-js/db.png)`server.js`에 다음을 추가해주었다. 우선 같은 파일 디렉토리에 비밀번호를 포함한 기본 정보를 담은 json파일을 분리해주었고(`.gitignore`에도 추가하여 비밀번호 깃허브 공유를 방지) `connect()`로 연결해주었다. 
+![image-20211215011607452](./db.png)`server.js`에 다음을 추가해주었다. 우선 같은 파일 디렉토리에 비밀번호를 포함한 기본 정보를 담은 json파일을 분리해주었다(`.gitignore`에도 추가하여 비밀번호 깃허브 공유를 방지)
+
+```json
+//db-config.json
+{
+  "host": "localhost",
+  "user": "root",
+  "password": "yourpassword",
+  "database": "express"
+}
+```
+
+그리고 require문으로 접속 정보를 불러와 `connectPool()`로 연결해주었다. 여기서 createConnection과 createPool의 차이는 [여기에](https://velog.io/@leitmotif/createConnection-vs-createPool) 잘 정리되어 있다.
 
 ```javascript
 const mysql = require('mysql');
@@ -180,15 +192,101 @@ connection.query('SELECT count from express', (error, rows) => {
 });
 ```
 
-성공적으로 연결되었다면 콘솔에 주석과 같이 찍히게 된다.
+성공적으로 연결되었다면 콘솔에 주석과 같이 찍히게 된다. 이것으로 react 개발 서버, express 서버, sql 서버가 모두 연결이 된 것을 확인할 수 있다.
+
+
 
 ### plus API 수정
 
-위에서 버튼을 누르면 서버에 저장된 count 변수를 +1해주는 api를 작성했었다. 이를 DB의 count를 가져와 더해주는 것으로 수정해보자.
+위에서 버튼을 누르면 서버에 저장된 count 변수를 +1해주는 api를 작성했었다. 이를 DB의 count를 가져와 더해주는 것으로 간단하게 수정해보자!
+
+우선 DB에서 count 값을 가져와서 보여주려고 한다. react의 `useEffect` hook을 사용하여 렌더링될 때, DB에서 data값을 가져오도록 하였다. 
+
+```react
+//App.js
+const [count, setCount] = useState(null);
+useEffect(() => {
+  fetch("/api/get").then((res) => {
+    res.json().then((data) => {
+      const { count } = data;
+      setCount(count);
+    });
+  });
+}, []);
+```
+
+AJAX로 get해주고 이에 대한 get api를 아래의 `server.js`에서 처리해주도록 하였다. DB의 express 테이블에서 count를 가져와서 리턴해주는 것이다.
+
+```javascript
+//in server.js
+app.get("/api/get", async (req, res) => {
+  try {
+    const [row] = await pool.query("SELECT count from express");
+    const { count } = row[0];
+    res.send({ count });
+  } catch (e) {
+    console.log(e);
+  }
+});
+```
+
+그러고 count를 버튼 옆에다가 보여주도록 하면 아래와 같이 DB table에서 count를 가져와서 보여주는 것을 확인할 수 있다.
+
+![db_connection_success](db_connection_success.png)
+
+이제, 더해주는 것을 반영해주기만 하면 된다.`server.js`에서 plus를 눌렀을 때 DB 값을 처리해주자.
+
+우선 브라우저에서 plus 버튼이 눌리면 server에 함수를 호출하여 수정된 count값을 받아온다고 해준다.
+
+```react
+//App.js	
+<input
+        type="button"
+        value="plus"
+        onClick={() => {
+          fetch("/api/plus").then((res) => {
+            //서버의 응답을 json형태로 받아 출력
+            console.log(res);
+            res.json().then((data) => {
+              const { count } = data;
+              setCount(count);
+            });
+          });
+        }}
+        style={{ margin: "10rem" }}
+      />
+```
+
+이제 api/plus를 server.js에서 처리해준다.
+
+```javascript
+app.get("/api/plus", async (req, res) => {
+  try {
+    const [row] = await pool.query("SELECT count from express");
+    let { count } = row[0];
+    console.log("current count : " + count);
+    count += 1;
+    console.log("modified count : " + count);
+    await pool.query(`UPDATE express SET count=${count}`);
+    res.send({ count });
+  } catch (e) {
+    console.log(e);
+  }
+});
+
+```
+
+express 테이블에서 값을 가져와서 count를 1 더해주고, UPDATE해주었다. 그러고 이를 브라우저에서도 보여줘야 하므로 count를  `response`해주면 된다. 여기서 async~await를 사용한 이유는 mysql 패키지에서 query문을 비동기적으로 실행하는데, 우리는 값을 가져와서→count 값을 1 더해주고 →테이블에 update 해주는 과정이 **동기적으로 일어나야 하기 때문이다**.
+
+count는 리액트에서 state로 관리해주기 때문에 서버에서 응답이 오면 바로 count도 바뀌는 것을 확인할 수 있다.
+
+![db_plus_success](db_plus_success.png)
+
+plus 버튼을 누르면 DB의 count가 update되는 것을 확인할 수 있다. 전체 코드는 [깃허브](https://github.com/choieastsea/full-stack-in-js)에 올려놓았다.
+
+이제서야 혼자 웹 서비스를 간단하게 한 사이클 만들어보았다!
+
+참고) [생활코딩](https://www.youtube.com/watch?v=VaAWIAxvj0A), [코딩애플](https://codingapple.com/unit/nodejs-react-integration/)
 
 
-
-https://codingcoding.tistory.com/449
-
-https://codingapple.com/unit/nodejs-react-integration/
 
